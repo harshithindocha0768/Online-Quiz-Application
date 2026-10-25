@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Pulse - Interactive Online Quiz Application</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti for result celebrate -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg-gradient-dark: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+            --bg-gradient-light: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #f3e8ff 100%);
+            --card-dark: rgba(30, 41, 59, 0.7);
+            --card-light: rgba(255, 255, 255, 0.85);
+            --border-dark: rgba(255, 255, 255, 0.1);
+            --border-light: rgba(0, 0, 0, 0.08);
+            --primary-accent: #6366f1;
+            --secondary-accent: #a855f7;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            background: var(--bg-gradient-dark);
+            background-attachment: fixed;
+            transition: background 0.4s ease, color 0.4s ease;
+        }
+
+        [data-bs-theme="light"] body {
+            background: var(--bg-gradient-light);
+            background-attachment: fixed;
+            color: #1e293b;
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--card-dark);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-dark);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        [data-bs-theme="light"] .glass-card {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Gradient Text */
+        .gradient-text {
+            background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Category Card Hover Effects */
+        .category-card {
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+        }
+
+        .category-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--primary-accent);
+            box-shadow: 0 12px 30px rgba(99, 102, 241, 0.25);
+        }
+
+        .category-card.selected {
+            border-color: var(--primary-accent);
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        /* Option Button Styling */
+        .option-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.1rem 1.25rem;
+            text-align: left;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            color: inherit;
+        }
+
+        [data-bs-theme="light"] .option-btn {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            transform: translateX(6px);
+            border-color: var(--primary-accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .option-btn.selected {
+            border-color: var(--primary-accent) !important;
+            background: rgba(99, 102, 241, 0.2) !important;
+            font-weight: 600;
+        }
+
+        .option-btn.correct {
+            background: rgba(16, 185, 129, 0.2) !important;
+            border-color: var(--success-color) !important;
+            color: #10b981 !important;
+        }
+
+        .option-btn.incorrect {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border-color: var(--danger-color) !important;
+            color: #ef4444 !important;
+        }
+
+        /* Custom Progress & Circular Score */
+        .progress-thin {
+            height: 10px;
+            border-radius: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .circular-chart {
+            max-width: 180px;
+            max-height: 180px;
+            margin: 0 auto;
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.1);
+            stroke-width: 3.8;
+        }
+
+        [data-bs-theme="light"] .circle-bg {
+            stroke: rgba(0, 0, 0, 0.08);
+        }
+
+        .circle {
+            fill: none;
+            stroke-width: 3.8;
+            stroke-linecap: round;
+            transition: stroke-dasharray 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Custom Buttons */
+        .btn-gradient {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.75rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.45);
+            color: #fff;
+        }
+
+        .badge-pill {
+            padding: 0.5em 1em;
+            border-radius: 50rem;
+            font-weight: 600;
+        }
+
+        /* Timer Indicator */
+        .timer-badge {
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Keyframe Animations */
+        @keyframes pulseGlow {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .timer-warning {
+            color: #ef4444 !important;
+            animation: pulseGlow 0.8s infinite;
+        }
+
+        /* Modal Customization */
+        .modal-content {
+            background: var(--card-dark);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-dark);
+            border-radius: 1.5rem;
+        }
+
+        [data-bs-theme="light"] .modal-content {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+        }
+
+        /* Question Indicator Badges */
+        .q-nav-btn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 3px;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100 justify-content-between">
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg pt-3 pb-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-reset" href="#" onclick="showScreen('screen-setup')">
+                <span class="p-2 rounded-3 bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                    <i class="fa-solid fa-bolt"></i>
+                </span>
+                <span class="fs-4 gradient-text">QuizPulse</span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-2">
+                <!-- Mute / Sound Toggle -->
+                <button class="btn btn-outline-secondary rounded-circle" id="soundToggleBtn" onclick="toggleSound()" title="Toggle Sound">
+                    <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+                </button>
+                <!-- Dark / Light Theme Toggle -->
+                <button class="btn btn-outline-secondary rounded-circle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Theme">
+                    <i class="fa-solid fa-moon" id="themeIcon"></i>
+                </button>
+                <!-- High Scores History -->
+                <button class="btn btn-outline-primary rounded-pill px-3 ms-2" onclick="showHistoryModal()">
+                    <i class="fa-solid fa-trophy me-1"></i> <span class="d-none d-sm-inline">Leaderboard</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container Area -->
+    <main class="container my-auto py-4">
+
+        <!-- ==================== SCREEN 1: QUIZ SETUP / HOME ==================== -->
+        <div id="screen-setup" class="screen-section">
+            <div class="text-center mb-5">
+                <h1 class="fw-extrabold display-5 mb-2">Test Your Knowledge</h1>
+                <p class="text-secondary fs-5">Choose a topic and difficulty to jump into the challenge.</p>
+            </div>
+
+            <div class="row g-4 max-w-lg mx-auto mb-4">
+                <!-- Topic Cards -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="glass-card category-card p-4 text-center h-100 rounded-4" onclick="selectCategory('webdev', this)">
+                        <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary d-inline-block mb-3 fs-3">
+                            <i class="fa-solid fa-code"></i>
+                        </div>
+                        <h5 class="fw-bold">Web Dev</h5>
+                        <p class="small text-secondary mb-0">HTML, CSS, JS & Modern Web</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="glass-card category-card p-4 text-center h-100 rounded-4" onclick="selectCategory('science', this)">
+                        <div class="p-3 rounded-circle bg-success bg-opacity-10 text-success d-inline-block mb-3 fs-3">
+                            <i class="fa-solid fa-flask"></i>
+                        </div>
+                        <h5 class="fw-bold">Science & Tech</h5>
+                        <p class="small text-secondary mb-0">Physics, Space, Tech Innovations</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="glass-card category-card p-4 text-center h-100 rounded-4" onclick="selectCategory('gk', this)">
+                        <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning d-inline-block mb-3 fs-3">
+                            <i class="fa-solid fa-earth-americas"></i>
+                        </div>
+                        <h5 class="fw-bold">General Knowledge</h5>
+                        <p class="small text-secondary mb-0">World History, Geography & Trivia</p>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="glass-card category-card p-4 text-center h-100 rounded-4" onclick="selectCategory('popculture', this)">
+                        <div class="p-3 rounded-circle bg-danger bg-opacity-10 text-danger d-inline-block mb-3 fs-3">
+                            <i class="fa-solid fa-film"></i>
+                        </div>
+                        <h5 class="fw-bold">Pop Culture</h5>
+                        <p class="small text-secondary mb-0">Movies, Music, Games & Media</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Options -->
+            <div class="glass-card p-4 rounded-4 max-w-lg mx-auto" style="max-width: 700px;">
+                <div class="row g-3 align-items-center mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-uppercase text-secondary">Difficulty Level</label>
+                        <select class="form-select glass-input border-secondary" id="difficultySelect">
+                            <option value="easy">Easy (Friendly timer & clear choices)</option>
+                            <option value="medium" selected>Medium (Standard pace & complexity)</option>
+                            <option value="hard">Hard (Strict timer & tricky questions)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-uppercase text-secondary">Timer Mode</label>
+                        <select class="form-select glass-input border-secondary" id="timerModeSelect">
+                            <option value="perQuestion">20s Per Question</option>
+                            <option value="totalQuiz">Total Quiz Timer (3 mins)</option>
+                            <option value="none">No Timer (Relaxed)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-gradient w-100 py-3 fs-5" onclick="startQuiz()">
+                    <i class="fa-solid fa-play me-2"></i> Start Quiz
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== SCREEN 2: ACTIVE QUIZ ==================== -->
+        <div id="screen-quiz" class="screen-section d-none">
+            <div class="glass-card p-4 p-md-5 rounded-4 mx-auto" style="max-width: 850px;">
+                <!-- Quiz Header bar -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span class="badge bg-primary bg-opacity-20 text-primary rounded-pill px-3 py-2" id="quizCategoryBadge">Web Development</span>
+                        <span class="badge bg-secondary bg-opacity-20 text-secondary rounded-pill px-3 py-2 ms-1" id="quizDifficultyBadge">Medium</span>
+                    </div>
+                    <div class="timer-badge d-flex align-items-center gap-2" id="timerBox">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="timerText">00:20</span>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between small text-secondary mb-1">
+                        <span>Question <span id="currentQNum">1</span> of <span id="totalQNum">10</span></span>
+                        <span>Score: <span id="liveScore">0</span></span>
+                    </div>
+                    <div class="progress progress-thin">
+                        <div class="progress-bar bg-gradient" id="quizProgressBar" role="progressbar" style="width: 10%;"></div>
+                    </div>
+                </div>
+
+                <!-- Question Title -->
+                <h3 class="fw-bold mb-4" id="questionTitle">Loading Question...</h3>
+
+                <!-- Multiple Choice Options -->
+                <div class="d-grid gap-3 mb-4" id="optionsContainer">
+                    <!-- Options populated via JS -->
+                </div>
+
+                <!-- Action Bar -->
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary border-opacity-10">
+                    <button class="btn btn-outline-secondary rounded-pill px-4" onclick="skipQuestion()">
+                        Skip <i class="fa-solid fa-forward ms-1"></i>
+                    </button>
+                    <button class="btn btn-gradient rounded-pill px-4" id="nextBtn" onclick="nextQuestion()" disabled>
+                        Next <i class="fa-solid fa-arrow-right ms-1"></i>
+                    </button>
+                </div>
+
+                <!-- Question Overview Quick Navigation -->
+                <div class="mt-4 pt-3 border-top border-secondary border-opacity-10 text-center">
+                    <small class="text-secondary d-block mb-2">Question Matrix</small>
+                    <div id="qMatrix" class="d-flex flex-wrap justify-content-center gap-1">
+                        <!-- Navigation dots generated via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SCREEN 3: RESULTS DISPLAY ==================== -->
+        <div id="screen-result" class="screen-section d-none">
+            <div class="glass-card p-4 p-md-5 rounded-4 mx-auto text-center" style="max-width: 900px;">
+                
+                <div class="mb-3">
+                    <span class="badge badge-pill bg-primary bg-opacity-20 text-primary fs-6" id="resultGradeBadge">Master</span>
+                </div>
+
+                <h1 class="fw-extrabold mb-1">Quiz Completed!</h1>
+                <p class="text-secondary mb-4" id="resultSubheading">Great effort! Here is how you performed.</p>
+
+                <div class="row g-4 align-items-center mb-5">
+                    <!-- Circular Score Chart -->
+                    <div class="col-md-4">
+                        <div class="circular-chart position-relative">
+                            <svg viewBox="0 0 36 36" class="w-100 h-100">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="circle" id="scoreCircle" stroke="#6366f1" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <div class="position-absolute top-50 start-50 translate-middle text-center">
+                                <h2 class="fw-extrabold mb-0" id="accuracyPercent">0%</h2>
+                                <small class="text-secondary">Accuracy</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Grid -->
+                    <div class="col-md-8">
+                        <div class="row g-3">
+                            <div class="col-6 col-sm-3">
+                                <div class="p-3 glass-card rounded-3 text-center">
+                                    <i class="fa-solid fa-trophy text-warning fs-4 mb-1"></i>
+                                    <div class="h5 fw-bold mb-0" id="resScore">0/0</div>
+                                    <small class="text-secondary">Score</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <div class="p-3 glass-card rounded-3 text-center">
+                                    <i class="fa-solid fa-check text-success fs-4 mb-1"></i>
+                                    <div class="h5 fw-bold mb-0" id="resCorrect">0</div>
+                                    <small class="text-secondary">Correct</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <div class="p-3 glass-card rounded-3 text-center">
+                                    <i class="fa-solid fa-xmark text-danger fs-4 mb-1"></i>
+                                    <div class="h5 fw-bold mb-0" id="resIncorrect">0</div>
+                                    <small class="text-secondary">Wrong</small>
+                                </div>
+                            </div>
+                            <div class="col-6 col-sm-3">
+                                <div class="p-3 glass-card rounded-3 text-center">
+                                    <i class="fa-solid fa-stopwatch text-info fs-4 mb-1"></i>
+                                    <div class="h5 fw-bold mb-0" id="resTime">0s</div>
+                                    <small class="text-secondary">Time</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons Action Bar -->
+                <div class="d-flex flex-wrap justify-content-center gap-3 mb-5">
+                    <button class="btn btn-gradient px-4 py-2" onclick="restartQuiz()">
+                        <i class="fa-solid fa-rotate-right me-2"></i> Try Again
+                    </button>
+                    <button class="btn btn-outline-primary rounded-pill px-4 py-2" onclick="showScreen('screen-setup')">
+                        <i class="fa-solid fa-list me-2"></i> Choose Topic
+                    </button>
+                    <button class="btn btn-outline-secondary rounded-pill px-4 py-2" onclick="toggleReviewSection()">
+                        <i class="fa-solid fa-eye me-2"></i> Review Answers
+                    </button>
+                </div>
+
+                <!-- Answers Detailed Review Section -->
+                <div id="reviewContainer" class="text-start d-none pt-4 border-top border-secondary border-opacity-10">
+                    <h4 class="fw-bold mb-4">Detailed Question Breakdown</h4>
+                    <div id="reviewList" class="d-flex flex-column gap-3">
+                        <!-- Questions breakdown generated via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-3 text-center small text-secondary">
+        <div class="container">
+            <span>QuizPulse Application &copy; 2026. Interactive Learning Platform.</span>
+        </div>
+    </footer>
+
+    <!-- Leaderboard / History Modal -->
+    <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-bottom border-secondary border-opacity-10">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Quiz History & High Scores
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="historyListContainer">
+                        <!-- History loaded dynamically -->
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-secondary border-opacity-10 justify-content-between">
+                    <button class="btn btn-sm btn-outline-danger" onclick="clearHistory()">Clear History</button>
+                    <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Main JavaScript Application Logic -->
+    <script>
+        /* ==========================================================================
+           QUESTION BANK DATABASE
+           ========================================================================== */
+        const questionBank = {
+            webdev: [
+                {
+                    q: "Which HTML5 element is used to specify a footer for a document or section?",
+                    options: ["<bottom>", "<footer>", "<section>", "<aside>"],
+                    answer: 1,
+                    explanation: "The HTML <footer> element represents a footer for its nearest ancestor sectioning content or sectioning root element."
+                },
+                {
+                    q: "Which CSS property controls the text size?",
+                    options: ["font-style", "text-size", "font-size", "text-style"],
+                    answer: 2,
+                    explanation: "The font-size property sets the size of the font."
+                },
+                {
+                    q: "What is the correct syntax for referring to an external script named 'app.js'?",
+                    options: ["<script href='app.js'>", "<script name='app.js'>", "<script src='app.js'>", "<script file='app.js'>"],
+                    answer: 2,
+                    explanation: "The src attribute is used to specify the URL of an external script file."
+                },
+                {
+                    q: "Which JavaScript method is used to write on the browser's console?",
+                    options: ["console.print()", "console.log()", "browser.log()", "document.log()"],
+                    answer: 1,
+                    explanation: "console.log() outputs a message to the web console."
+                },
+                {
+                    q: "In Flexbox, which property aligns items along the main axis?",
+                    options: ["align-items", "justify-content", "align-content", "center-items"],
+                    answer: 1,
+                    explanation: "justify-content defines how the browser distributes space between and around content items along the main-axis."
+                }
+            ],
+            science: [
+                {
+                    q: "What is the chemical symbol for Gold?",
+                    options: ["Ag", "Au", "Fe", "Gd"],
+                    answer: 1,
+                    explanation: "Au comes from the Latin word for gold, 'aurum'."
+                },
+                {
+                    q: "Which planet is known as the Red Planet?",
+                    options: ["Venus", "Jupiter", "Mars", "Saturn"],
+                    answer: 2,
+                    explanation: "Mars appears red due to the prevalence of iron oxide on its surface."
+                },
+                {
+                    q: "What is the speed of light in a vacuum approximately?",
+                    options: ["300,000 km/s", "150,000 km/s", "1,000,000 km/s", "30,000 km/s"],
+                    answer: 0,
+                    explanation: "Light travels at approximately 299,792 kilometers per second in a vacuum."
+                },
+                {
+                    q: "Which organelle is known as the powerhouse of the cell?",
+                    options: ["Nucleus", "Ribosome", "Mitochondria", "Golgi Apparatus"],
+                    answer: 2,
+                    explanation: "Mitochondria generate most of the chemical energy needed to power the cell's biochemical reactions."
+                },
+                {
+                    q: "What fundamental force keeps us on the ground?",
+                    options: ["Electromagnetism", "Strong Nuclear Force", "Gravity", "Friction"],
+                    answer: 2,
+                    explanation: "Gravity is the natural phenomenon by which all things with mass or energy are brought toward one another."
+                }
+            ],
+            gk: [
+                {
+                    q: "What is the capital of Japan?",
+                    options: ["Kyoto", "Osaka", "Tokyo", "Hiroshima"],
+                    answer: 2,
+                    explanation: "Tokyo has been the capital of Japan since 1868."
+                },
+                {
+                    q: "Who painted the Mona Lisa?",
+                    options: ["Vincent van Gogh", "Leonardo da Vinci", "Pablo Picasso", "Claude Monet"],
+                    answer: 1,
+                    explanation: "Leonardo da Vinci created the Mona Lisa in the early 16th century."
+                },
+                {
+                    q: "Which is the largest ocean on Earth?",
+                    options: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
+                    answer: 3,
+                    explanation: "The Pacific Ocean is the largest and deepest of Earth's oceanic divisions."
+                },
+                {
+                    q: "How many continents are there on Earth?",
+                    options: ["5", "6", "7", "8"],
+                    answer: 2,
+                    explanation: "The 7 continents are Asia, Africa, North America, South America, Antarctica, Europe, and Australia."
+                },
+                {
+                    q: "Which country is home to the Kangaroo?",
+                    options: ["South Africa", "Australia", "Brazil", "New Zealand"],
+                    answer: 1,
+                    explanation: "Kangaroos are indigenous to Australia."
+                }
+            ],
+            popculture: [
+                {
+                    q: "Who played Iron Man in the Marvel Cinematic Universe?",
+                    options: ["Chris Evans", "Robert Downey Jr.", "Chris Hemsworth", "Mark Ruffalo"],
+                    answer: 1,
+                    explanation: "Robert Downey Jr. originated the role of Tony Stark/Iron Man in 2008."
+                },
+                {
+                    q: "Which fictional wizarding school does Harry Potter attend?",
+                    options: ["Hogwarts", "Beauxbatons", "Durmstrang", "Ilvermorny"],
+                    answer: 0,
+                    explanation: "Harry Potter attends Hogwarts School of Witchcraft and Wizardry."
+                },
+                {
+                    q: "What is the highest-grossing film of all time (unadjusted for inflation)?",
+                    options: ["Titanic", "Avengers: Endgame", "Avatar", "Star Wars: The Force Awakens"],
+                    answer: 2,
+                    explanation: "James Cameron's Avatar is the highest-grossing film worldwide."
+                },
+                {
+                    q: "Which pop singer is known as the 'Queen of Pop'?",
+                    options: ["Lady Gaga", "Madonna", "Beyoncé", "Britney Spears"],
+                    answer: 1,
+                    explanation: "Madonna has been referred to as the Queen of Pop since the 1980s."
+                },
+                {
+                    q: "In 'The Office', what company do the main characters work for?",
+                    options: ["Initech", "Dunder Mifflin", "Aperture Science", "Pied Piper"],
+                    answer: 1,
+                    explanation: "The employees work at the Scranton branch of Dunder Mifflin Paper Company."
+                }
+            ]
+        };
+
+        /* ==========================================================================
+           AUDIO ENGINE (Web Audio API Synthesizer - No External Files)
+           ========================================================================== */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+            }
+
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playCorrect() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.35);
+            }
+
+            playWrong() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now); // A3
+                osc.frequency.setValueAtTime(180, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.25);
+            }
+
+            playComplete() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0.15, now + idx * 0.1);
+                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.3);
+                });
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        /* ==========================================================================
+           STATE MANAGEMENT
+           ========================================================================== */
+        let state = {
+            selectedCategory: 'webdev',
+            difficulty: 'medium',
+            timerMode: 'perQuestion',
+            questions: [],
+            currentQIdx: 0,
+            userAnswers: [], // Array of selected option index or null
+            score: 0,
+            timerInterval: null,
+            timeLeft: 0,
+            totalTimeElapsed: 0,
+            overallTimerInterval: null
+        };
+
+        /* ==========================================================================
+           UI NAVIGATION & INITIALIZATION
+           ========================================================================== */
+        document.addEventListener('DOMContentLoaded', () => {
+            // Select default category UI
+            const defaultCatCard = document.querySelector('.category-card');
+            if (defaultCatCard) defaultCatCard.classList.add('selected');
+        });
+
+        function showScreen(screenId) {
+            sound.playClick();
+            document.querySelectorAll('.screen-section').forEach(s => s.classList.add('d-none'));
+            document.getElementById(screenId).classList.remove('d-none');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function selectCategory(catKey, cardEl) {
+            sound.playClick();
+            state.selectedCategory = catKey;
+            document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
+            cardEl.classList.add('selected');
+        }
+
+        function toggleTheme() {
+            sound.playClick();
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            
+            const icon = document.getElementById('themeIcon');
+            icon.className = newTheme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        }
+
+        function toggleSound() {
+            sound.muted = !sound.muted;
+            const icon = document.getElementById('soundIcon');
+            icon.className = sound.muted ? 'fa-solid fa-volume-xmark text-danger' : 'fa-solid fa-volume-high';
+        }
+
+        /* ==========================================================================
+           QUIZ ENGINE & TIMERS
+           ========================================================================== */
+        function startQuiz() {
+            sound.playClick();
+            state.difficulty = document.getElementById('difficultySelect').value;
+            state.timerMode = document.getElementById('timerModeSelect').value;
+
+            // Clone and shuffle questions
+            const rawQuestions = questionBank[state.selectedCategory] || questionBank.webdev;
+            state.questions = [...rawQuestions].sort(() => Math.random() - 0.5);
+            state.currentQIdx = 0;
+            state.userAnswers = new Array(state.questions.length).fill(null);
+            state.score = 0;
+            state.totalTimeElapsed = 0;
+
+            // Set Badges
+            const categoryNames = { webdev: 'Web Dev', science: 'Science', gk: 'General Knowledge', popculture: 'Pop Culture' };
+            document.getElementById('quizCategoryBadge').innerText = categoryNames[state.selectedCategory];
+            document.getElementById('quizDifficultyBadge').innerText = state.difficulty.toUpperCase();
+
+            // Total Questions Count
+            document.getElementById('totalQNum').innerText = state.questions.length;
+
+            showScreen('screen-quiz');
+            renderQuestionMatrix();
+            loadQuestion();
+
+            // Handle overall timer tracking
+            clearInterval(state.overallTimerInterval);
+            state.overallTimerInterval = setInterval(() => {
+                state.totalTimeElapsed++;
+            }, 1000);
+
+            if (state.timerMode === 'totalQuiz') {
+                state.timeLeft = 180; // 3 minutes total
+                startQuizTimer();
+            }
+        }
+
+        function loadQuestion() {
+            clearInterval(state.timerInterval);
+            const q = state.questions[state.currentQIdx];
+            
+            document.getElementById('currentQNum').innerText = state.currentQIdx + 1;
+            document.getElementById('liveScore').innerText = state.score;
+            document.getElementById('questionTitle').innerText = q.q;
+
+            // Render Options
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+
+            const selectedAns = state.userAnswers[state.currentQIdx];
+
+            q.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn d-flex align-items-center justify-content-between w-100';
+                if (selectedAns === idx) btn.classList.add('selected');
+                
+                btn.onclick = () => selectOption(idx);
+                btn.innerHTML = `
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fw-bold px-2 py-1 rounded bg-secondary bg-opacity-20 small">${String.fromCharCode(65 + idx)}</span>
+                        <span>${optText}</span>
+                    </div>
+                    <i class="fa-regular fa-circle text-secondary opacity-50 check-icon"></i>
+                `;
+                container.appendChild(btn);
+            });
+
+            // Update Progress Bar
+            const progPercent = ((state.currentQIdx + 1) / state.questions.length) * 100;
+            document.getElementById('quizProgressBar').style.width = `${progPercent}%`;
+
+            // Next button state
+            document.getElementById('nextBtn').disabled = state.userAnswers[state.currentQIdx] === null;
+
+            // Update matrix active state
+            updateMatrixUI();
+
+            // Handle Per Question Timer
+            if (state.timerMode === 'perQuestion') {
+                const timerLimits = { easy: 30, medium: 20, hard: 10 };
+                state.timeLeft = timerLimits[state.difficulty] || 20;
+                startQuestionTimer();
+            } else if (state.timerMode === 'none') {
+                document.getElementById('timerText').innerText = "∞";
+            }
+        }
+
+        function selectOption(optionIdx) {
+            sound.playClick();
+            state.userAnswers[state.currentQIdx] = optionIdx;
+
+            // Highlight chosen option
+            const buttons = document.querySelectorAll('#optionsContainer .option-btn');
+            buttons.forEach((btn, idx) => {
+                if (idx === optionIdx) {
+                    btn.classList.add('selected');
+                    const icon = btn.querySelector('.check-icon');
+                    if (icon) icon.className = 'fa-solid fa-circle-check text-primary';
+                } else {
+                    btn.classList.remove('selected');
+                    const icon = btn.querySelector('.check-icon');
+                    if (icon) icon.className = 'fa-regular fa-circle text-secondary opacity-50';
+                }
+            });
+
+            document.getElementById('nextBtn').disabled = false;
+            updateMatrixUI();
+        }
+
+        function startQuestionTimer() {
+            updateTimerDisplay();
+            state.timerInterval = setInterval(() => {
+                state.timeLeft--;
+                updateTimerDisplay();
+
+                if (state.timeLeft <= 0) {
+                    clearInterval(state.timerInterval);
+                    sound.playWrong();
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        function startQuizTimer() {
+            updateTimerDisplay();
+            state.timerInterval = setInterval(() => {
+                state.timeLeft--;
+                updateTimerDisplay();
+
+                if (state.timeLeft <= 0) {
+                    clearInterval(state.timerInterval);
+                    finishQuiz();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const timerBox = document.getElementById('timerBox');
+            const timerText = document.getElementById('timerText');
+            
+            const mins = Math.floor(state.timeLeft / 60);
+            const secs = state.timeLeft % 60;
+            timerText.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+            if (state.timeLeft <= 5) {
+                timerBox.classList.add('timer-warning');
+            } else {
+                timerBox.classList.remove('timer-warning');
+            }
+        }
+
+        function skipQuestion() {
+            sound.playClick();
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            sound.playClick();
+            if (state.currentQIdx < state.questions.length - 1) {
+                state.currentQIdx++;
+                loadQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        /* Question Quick Nav Matrix */
+        function renderQuestionMatrix() {
+            const matrixContainer = document.getElementById('qMatrix');
+            matrixContainer.innerHTML = '';
+            state.questions.forEach((_, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-outline-secondary q-nav-btn';
+                btn.innerText = idx + 1;
+                btn.onclick = () => {
+                    sound.playClick();
+                    state.currentQIdx = idx;
+                    loadQuestion();
+                };
+                matrixContainer.appendChild(btn);
+            });
+        }
+
+        function updateMatrixUI() {
+            const btns = document.querySelectorAll('#qMatrix .q-nav-btn');
+            btns.forEach((btn, idx) => {
+                btn.className = 'btn q-nav-btn';
+                if (idx === state.currentQIdx) {
+                    btn.classList.add('btn-primary');
+                } else if (state.userAnswers[idx] !== null) {
+                    btn.classList.add('btn-success');
+                } else {
+                    btn.classList.add('btn-outline-secondary');
+                }
+            });
+        }
+
+        /* ==========================================================================
+           RESULTS & REVIEW ENGINE
+           ========================================================================== */
+        function finishQuiz() {
+            clearInterval(state.timerInterval);
+            clearInterval(state.overallTimerInterval);
+            sound.playComplete();
+
+            // Calculate Score
+            let correctCount = 0;
+            state.questions.forEach((q, idx) => {
+                if (state.userAnswers[idx] === q.answer) {
+                    correctCount++;
+                }
+            });
+
+            state.score = correctCount;
+            const total = state.questions.length;
+            const accuracy = Math.round((correctCount / total) * 100);
+
+            // Set Results UI
+            document.getElementById('resScore').innerText = `${correctCount}/${total}`;
+            document.getElementById('resCorrect').innerText = correctCount;
+            document.getElementById('resIncorrect').innerText = total - correctCount;
+            document.getElementById('resTime').innerText = `${state.totalTimeElapsed}s`;
+            document.getElementById('accuracyPercent').innerText = `${accuracy}%`;
+
+            // Score Circle Animation
+            const circle = document.getElementById('scoreCircle');
+            circle.setAttribute('stroke-dasharray', `${accuracy}, 100`);
+
+            // Performance Grade
+            const gradeBadge = document.getElementById('resultGradeBadge');
+            const resultSubheading = document.getElementById('resultSubheading');
+
+            if (accuracy >= 80) {
+                gradeBadge.className = "badge badge-pill bg-success bg-opacity-20 text-success fs-6";
+                gradeBadge.innerText = "Master / Expert";
+                resultSubheading.innerText = "Outstanding! You possess deep domain mastery.";
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                }
+            } else if (accuracy >= 50) {
+                gradeBadge.className = "badge badge-pill bg-warning bg-opacity-20 text-warning fs-6";
+                gradeBadge.innerText = "Intermediate";
+                resultSubheading.innerText = "Good job! A little review will make you unstoppable.";
+            } else {
+                gradeBadge.className = "badge badge-pill bg-danger bg-opacity-20 text-danger fs-6";
+                gradeBadge.innerText = "Beginner / Apprentice";
+                resultSubheading.innerText = "Keep practicing! Don't hesitate to try again.";
+            }
+
+            // Save to LocalStorage History
+            saveQuizResult(accuracy, correctCount, total);
+
+            // Populate Detailed Review
+            renderReviewList();
+
+            showScreen('screen-result');
+        }
+
+        function renderReviewList() {
+            const container = document.getElementById('reviewList');
+            container.innerHTML = '';
+
+            state.questions.forEach((q, idx) => {
+                const userChoice = state.userAnswers[idx];
+                const isCorrect = userChoice === q.answer;
+
+                const item = document.createElement('div');
+                item.className = `p-4 glass-card rounded-3 border-start border-4 ${isCorrect ? 'border-success' : 'border-danger'}`;
+
+                let optionsListHtml = q.options.map((opt, oIdx) => {
+                    let badge = '';
+                    let cls = 'text-secondary';
+
+                    if (oIdx === q.answer) {
+                        badge = '<span class="badge bg-success ms-2">Correct Answer</span>';
+                        cls = 'text-success fw-bold';
+                    }
+                    if (userChoice === oIdx && !isCorrect) {
+                        badge = '<span class="badge bg-danger ms-2">Your Answer</span>';
+                        cls = 'text-danger text-decoration-line-through';
+                    } else if (userChoice === oIdx && isCorrect) {
+                        badge = '<span class="badge bg-success ms-2">Your Choice</span>';
+                    }
+
+                    return `<li class="mb-1 ${cls}">${String.fromCharCode(65 + oIdx)}. ${opt} ${badge}</li>`;
+                }).join('');
+
+                item.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold mb-0">Q${idx + 1}: ${q.q}</h6>
+                        <span class="badge ${isCorrect ? 'bg-success' : 'bg-danger'}">${isCorrect ? 'Correct' : 'Incorrect'}</span>
+                    </div>
+                    <ul class="list-unstyled mb-2 ps-2">${optionsListHtml}</ul>
+                    <div class="small p-2 rounded bg-secondary bg-opacity-10 text-secondary">
+                        <i class="fa-solid fa-circle-info me-1"></i> <strong>Explanation:</strong> ${q.explanation}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function toggleReviewSection() {
+            sound.playClick();
+            const rev = document.getElementById('reviewContainer');
+            rev.classList.toggle('d-none');
+        }
+
+        function restartQuiz() {
+            startQuiz();
+        }
+
+        /* ==========================================================================
+           LOCAL STORAGE / HISTORY LOGIC
+           ========================================================================== */
+        function saveQuizResult(accuracy, correct, total) {
+            const history = JSON.parse(localStorage.getItem('quiz_pulse_history') || '[]');
+            const entry = {
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                category: state.selectedCategory.toUpperCase(),
+                difficulty: state.difficulty,
+                score: `${correct}/${total}`,
+                accuracy: accuracy
+            };
+            history.unshift(entry);
+            localStorage.setItem('quiz_pulse_history', JSON.stringify(history.slice(0, 10))); // keep latest 10
+        }
+
+        function showHistoryModal() {
+            sound.playClick();
+            const history = JSON.parse(localStorage.getItem('quiz_pulse_history') || '[]');
+            const container = document.getElementById('historyListContainer');
+
+            if (history.length === 0) {
+                container.innerHTML = `<p class="text-center text-secondary py-4 mb-0">No quiz records found yet. Take a quiz to view scores!</p>`;
+            } else {
+                let html = '<div class="list-group list-group-flush">';
+                history.forEach(item => {
+                    html += `
+                        <div class="list-group-item bg-transparent text-reset d-flex justify-content-between align-items-center py-3 border-secondary border-opacity-10">
+                            <div>
+                                <h6 class="mb-0 fw-bold">${item.category} <span class="badge bg-secondary bg-opacity-20 text-secondary small ms-1">${item.difficulty}</span></h6>
+                                <small class="text-secondary">${item.date}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="fw-bold fs-5 ${item.accuracy >= 70 ? 'text-success' : 'text-warning'}">${item.accuracy}%</span>
+                                <small class="d-block text-secondary">${item.score} Correct</small>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('historyModal'));
+            modal.show();
+        }
+
+        function clearHistory() {
+            sound.playClick();
+            localStorage.removeItem('quiz_pulse_history');
+            showHistoryModal();
+        }
+    </script>
+</body>
+</html>
